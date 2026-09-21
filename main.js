@@ -2,50 +2,47 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 
-// ============================================================
-// SMART CITY SIMULATOR
-// Complete Main.js
-// ============================================================
-
-
-// ============================================================
-// SCENE
-// ============================================================
+/* ============================================================
+   3D SMART CITY SIMULATOR — V3
+   ============================================================ */
 
 const scene = new THREE.Scene();
 
-scene.background =
-    new THREE.Color(0x87ceeb);
+scene.background = new THREE.Color(0x82cbea);
 
-
-// ============================================================
-// CAMERA
-// ============================================================
-
-const camera =
-    new THREE.PerspectiveCamera(
-        60,
-        window.innerWidth /
-        window.innerHeight,
-        0.1,
-        1000
-    );
-
-camera.position.set(
-    20,
-    22,
-    20
+scene.fog = new THREE.Fog(
+    0x82cbea,
+    55,
+    125
 );
 
 
-// ============================================================
-// RENDERER
-// ============================================================
+/* ============================================================
+   CAMERA
+   ============================================================ */
 
-const renderer =
-    new THREE.WebGLRenderer({
-        antialias: true
-    });
+const camera = new THREE.PerspectiveCamera(
+    52,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    400
+);
+
+camera.position.set(
+    24,
+    17,
+    24
+);
+
+
+/* ============================================================
+   RENDERER
+   ============================================================ */
+
+const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    powerPreference: "high-performance"
+});
 
 renderer.setSize(
     window.innerWidth,
@@ -53,31 +50,43 @@ renderer.setSize(
 );
 
 renderer.setPixelRatio(
-    Math.min(
-        window.devicePixelRatio,
-        2
-    )
+    Math.min(window.devicePixelRatio, 1.6)
 );
+
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type =
+    THREE.PCFSoftShadowMap;
+
+renderer.outputColorSpace =
+    THREE.SRGBColorSpace;
+
+renderer.toneMapping =
+    THREE.ACESFilmicToneMapping;
+
+renderer.toneMappingExposure = 1.15;
 
 document
     .getElementById("city-container")
-    .appendChild(
-        renderer.domElement
-    );
+    .appendChild(renderer.domElement);
 
 
-// ============================================================
-// CONTROLS
-// ============================================================
+/* ============================================================
+   CONTROLS
+   ============================================================ */
 
-const controls =
-    new OrbitControls(
-        camera,
-        renderer.domElement
-    );
+const controls = new OrbitControls(
+    camera,
+    renderer.domElement
+);
 
-controls.enableDamping =
-    true;
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+
+controls.minDistance = 15;
+controls.maxDistance = 58;
+
+controls.minPolarAngle = 0.55;
+controls.maxPolarAngle = Math.PI / 2.18;
 
 controls.target.set(
     0,
@@ -86,14 +95,34 @@ controls.target.set(
 );
 
 
-// ============================================================
-// LIGHT
-// ============================================================
+/* ============================================================
+   MATERIAL HELPER
+   ============================================================ */
+
+function makeMaterial(
+    color,
+    roughness = 0.8,
+    metalness = 0
+) {
+
+    return new THREE.MeshStandardMaterial({
+        color,
+        roughness,
+        metalness
+    });
+
+}
+
+
+/* ============================================================
+   LIGHTING
+   ============================================================ */
 
 const ambientLight =
-    new THREE.AmbientLight(
-        0xffffff,
-        0.7
+    new THREE.HemisphereLight(
+        0xe4f7ff,
+        0x315b35,
+        1.25
     );
 
 scene.add(
@@ -101,409 +130,500 @@ scene.add(
 );
 
 
-const sunlight =
+const sun =
     new THREE.DirectionalLight(
         0xffffff,
-        1
+        2.2
     );
 
-sunlight.position.set(
-    20,
+sun.position.set(
     30,
-    10
+    45,
+    20
 );
 
-scene.add(
-    sunlight
-);
+sun.castShadow = true;
+
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+
+sun.shadow.camera.left = -45;
+sun.shadow.camera.right = 45;
+sun.shadow.camera.top = 45;
+sun.shadow.camera.bottom = -45;
+
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 120;
+
+sun.shadow.bias = -0.0005;
+
+scene.add(sun);
 
 
-// ============================================================
-// DAY NIGHT
-// ============================================================
+/* ============================================================
+   DAY / NIGHT
+   ============================================================ */
 
 let isNight = false;
 
+let targetAmbient = 1.25;
+let targetSun = 2.2;
 
-// ============================================================
-// GROUND
-// ============================================================
+
+/* ============================================================
+   GROUND
+   ============================================================ */
 
 const ground =
     new THREE.Mesh(
-
         new THREE.BoxGeometry(
-            50,
+            80,
             0.5,
-            50
+            80
         ),
-
-        new THREE.MeshStandardMaterial({
-            color: 0x4f984f
-        })
-
+        makeMaterial(
+            0x3d7d40,
+            1
+        )
     );
 
-ground.position.y =
-    -0.25;
+ground.position.y = -0.25;
 
-scene.add(
-    ground
-);
+ground.receiveShadow = true;
+
+scene.add(ground);
 
 
-// ============================================================
-// ROADS
-// ============================================================
+/* ============================================================
+   ROADS
+   ============================================================ */
 
 const roadMaterial =
-    new THREE.MeshStandardMaterial({
-        color: 0x292929
-    });
+    makeMaterial(
+        0x20252a,
+        0.92
+    );
 
 
 const horizontalRoad =
     new THREE.Mesh(
-
         new THREE.BoxGeometry(
-            50,
-            0.1,
-            6
+            80,
+            0.14,
+            7
         ),
-
         roadMaterial
-
     );
 
-horizontalRoad.position.y =
-    0.05;
+horizontalRoad.position.y = 0.05;
 
-scene.add(
-    horizontalRoad
-);
+horizontalRoad.receiveShadow = true;
+
+scene.add(horizontalRoad);
 
 
 const verticalRoad =
     new THREE.Mesh(
-
         new THREE.BoxGeometry(
-            6,
-            0.1,
-            50
+            7,
+            0.14,
+            80
         ),
-
         roadMaterial
-
     );
 
-verticalRoad.position.y =
-    0.06;
+verticalRoad.position.y = 0.06;
 
-scene.add(
-    verticalRoad
-);
+verticalRoad.receiveShadow = true;
 
-
-// ============================================================
-// ROAD MARKINGS
-// ============================================================
-
-const lineMaterial =
-    new THREE.MeshStandardMaterial({
-        color: 0xffffff
-    });
+scene.add(verticalRoad);
 
 
-function createRoadLine(
+/* ============================================================
+   SIDEWALKS
+   ============================================================ */
+
+const sidewalkMaterial =
+    makeMaterial(
+        0x858d94,
+        0.95
+    );
+
+
+function createSidewalk(
     x,
     z,
     width,
     depth
 ) {
 
-    const line =
+    const sidewalk =
         new THREE.Mesh(
-
             new THREE.BoxGeometry(
                 width,
-                0.12,
+                0.14,
                 depth
             ),
-
-            lineMaterial
-
+            sidewalkMaterial
         );
 
-    line.position.set(
+    sidewalk.position.set(
         x,
         0.13,
         z
     );
 
-    scene.add(
-        line
-    );
+    sidewalk.receiveShadow = true;
+
+    scene.add(sidewalk);
+
 }
 
 
-// Horizontal road
+createSidewalk(0, 4.25, 80, 1.1);
+createSidewalk(0, -4.25, 80, 1.1);
+createSidewalk(4.25, 0, 1.1, 80);
+createSidewalk(-4.25, 0, 1.1, 80);
 
-for (
-    let x = -24;
-    x <= 24;
-    x += 8
+
+/* ============================================================
+   ROAD MARKINGS
+   ============================================================ */
+
+const whiteMaterial =
+    makeMaterial(
+        0xf5f5f5,
+        0.55
+    );
+
+
+function roadMark(
+    x,
+    z,
+    width,
+    depth
 ) {
 
-    createRoadLine(
+    const mark =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                width,
+                0.045,
+                depth
+            ),
+            whiteMaterial
+        );
+
+    mark.position.set(
+        x,
+        0.145,
+        z
+    );
+
+    scene.add(mark);
+
+}
+
+
+/* horizontal center */
+
+for (
+    let x = -38;
+    x <= 38;
+    x += 5
+) {
+
+    roadMark(
         x,
         0,
-        4,
-        0.12
+        2.7,
+        0.08
     );
 
 }
 
 
-// Vertical road
+/* vertical center */
 
 for (
-    let z = -24;
-    z <= 24;
-    z += 8
+    let z = -38;
+    z <= 38;
+    z += 5
 ) {
 
-    createRoadLine(
+    roadMark(
         0,
         z,
-        0.12,
-        4
+        0.08,
+        2.7
     );
 
 }
 
 
-// ============================================================
-// BUILDINGS
-// ============================================================
+/* lane lines */
+
+for (
+    let x = -38;
+    x <= 38;
+    x += 6
+) {
+
+    roadMark(
+        x,
+        -1.55,
+        2.5,
+        0.045
+    );
+
+    roadMark(
+        x,
+        1.55,
+        2.5,
+        0.045
+    );
+
+}
+
+
+for (
+    let z = -38;
+    z <= 38;
+    z += 6
+) {
+
+    roadMark(
+        -1.55,
+        z,
+        0.045,
+        2.5
+    );
+
+    roadMark(
+        1.55,
+        z,
+        0.045,
+        2.5
+    );
+
+}
+
+
+/* ============================================================
+   BUILDINGS
+   ============================================================ */
+
+const buildingMaterials = [
+
+    makeMaterial(0x727d88, 0.82),
+    makeMaterial(0x818c97, 0.82),
+    makeMaterial(0x626d78, 0.82),
+    makeMaterial(0x929da7, 0.82),
+    makeMaterial(0x6e7b86, 0.82)
+
+];
+
+
+const dayWindowMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0x91d5f4,
+        roughness: 0.3,
+        metalness: 0.1
+    });
+
+
+const nightWindowMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0xffd76b,
+        emissive: 0xffa000,
+        emissiveIntensity: 1.25,
+        roughness: 0.3
+    });
+
+
+const buildingWindows = [];
+
 
 function createBuilding(
     x,
     z,
     width,
     height,
-    depth
-) {
-
-    const building =
-        new THREE.Mesh(
-
-            new THREE.BoxGeometry(
-                width,
-                height,
-                depth
-            ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0xb4c0d0
-            })
-
-        );
-
-    building.position.set(
-        x,
-        height / 2,
-        z
-    );
-
-    scene.add(
-        building
-    );
-
-
-    // Windows
-
-    for (
-        let row = 0;
-        row < Math.floor(height / 2);
-        row++
-    ) {
-
-        for (
-            let col = 0;
-            col < Math.floor(width / 1.5);
-            col++
-        ) {
-
-            const windowMesh =
-                new THREE.Mesh(
-
-                    new THREE.BoxGeometry(
-                        0.35,
-                        0.45,
-                        0.05
-                    ),
-
-                    new THREE.MeshStandardMaterial({
-                        color: 0x9fd8ff
-                    })
-
-                );
-
-            windowMesh.position.set(
-
-                x -
-                width / 2 +
-                0.8 +
-                col * 1.4,
-
-                1.2 +
-                row * 1.8,
-
-                z -
-                depth / 2 -
-                0.03
-
-            );
-
-            windowMesh.userData.cityWindow =
-                true;
-
-            scene.add(
-                windowMesh
-            );
-
-        }
-
-    }
-
-}
-
-
-// Buildings
-
-createBuilding(
-    -12,
-    -12,
-    6,
-    10,
-    6
-);
-
-createBuilding(
-    -20,
-    -12,
-    5,
-    7,
-    5
-);
-
-createBuilding(
-    12,
-    -12,
-    6,
-    12,
-    6
-);
-
-createBuilding(
-    20,
-    -12,
-    5,
-    8,
-    5
-);
-
-createBuilding(
-    -12,
-    12,
-    6,
-    8,
-    6
-);
-
-createBuilding(
-    -20,
-    12,
-    5,
-    11,
-    5
-);
-
-createBuilding(
-    12,
-    12,
-    6,
-    13,
-    6
-);
-
-createBuilding(
-    20,
-    12,
-    5,
-    7,
-    5
-);
-
-
-// ============================================================
-// TREES
-// ============================================================
-
-function createTree(
-    x,
-    z
+    depth,
+    index
 ) {
 
     const group =
         new THREE.Group();
 
 
-    const trunk =
+    const body =
         new THREE.Mesh(
-
-            new THREE.CylinderGeometry(
-                0.25,
-                0.35,
-                2,
-                10
+            new THREE.BoxGeometry(
+                width,
+                height,
+                depth
             ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0x6b3e26
-            })
-
+            buildingMaterials[
+                index %
+                buildingMaterials.length
+            ]
         );
 
-    trunk.position.y =
-        1;
+    body.position.y =
+        height / 2;
 
-    group.add(
-        trunk
-    );
+    body.castShadow = true;
+    body.receiveShadow = true;
+
+    group.add(body);
 
 
-    const leaves =
+    /* rooftop */
+
+    const roof =
         new THREE.Mesh(
-
-            new THREE.SphereGeometry(
-                1.4,
-                12,
-                12
+            new THREE.BoxGeometry(
+                width * 0.84,
+                0.4,
+                depth * 0.84
             ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0x1f7a3a
-            })
-
+            makeMaterial(
+                0x48545f,
+                0.85
+            )
         );
 
-    leaves.position.y =
-        2.7;
+    roof.position.y =
+        height + 0.2;
 
-    group.add(
-        leaves
-    );
+    roof.castShadow = true;
+
+    group.add(roof);
+
+
+    /* rooftop machine */
+
+    const machine =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                Math.min(width * 0.25, 1.4),
+                0.65,
+                Math.min(depth * 0.25, 1.4)
+            ),
+            makeMaterial(
+                0x5c6873,
+                0.8
+            )
+        );
+
+    machine.position.y =
+        height + 0.72;
+
+    machine.castShadow = true;
+
+    group.add(machine);
+
+
+    /* windows front */
+
+    const cols =
+        Math.max(
+            2,
+            Math.floor(width / 1.25)
+        );
+
+    const rows =
+        Math.max(
+            2,
+            Math.floor(height / 1.5)
+        );
+
+
+    for (
+        let row = 0;
+        row < rows;
+        row++
+    ) {
+
+        for (
+            let col = 0;
+            col < cols;
+            col++
+        ) {
+
+            const win =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        0.42,
+                        0.5,
+                        0.045
+                    ),
+                    dayWindowMaterial
+                );
+
+            win.position.set(
+                -width / 2 +
+                0.7 +
+                col * 1.15,
+
+                1.1 +
+                row * 1.45,
+
+                depth / 2 + 0.025
+            );
+
+            group.add(win);
+
+            buildingWindows.push(win);
+
+        }
+
+    }
+
+
+    /* windows back */
+
+    for (
+        let row = 0;
+        row < rows;
+        row++
+    ) {
+
+        for (
+            let col = 0;
+            col < cols;
+            col++
+        ) {
+
+            const win =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        0.42,
+                        0.5,
+                        0.045
+                    ),
+                    dayWindowMaterial
+                );
+
+            win.position.set(
+                -width / 2 +
+                0.7 +
+                col * 1.15,
+
+                1.1 +
+                row * 1.45,
+
+                -depth / 2 - 0.025
+            );
+
+            group.add(win);
+
+            buildingWindows.push(win);
+
+        }
+
+    }
 
 
     group.position.set(
@@ -512,38 +632,657 @@ function createTree(
         z
     );
 
-    scene.add(
-        group
-    );
+    scene.add(group);
+
 }
 
 
-[
-    [-8, -10],
-    [-18, -5],
-    [-8, 10],
-    [-18, 6],
-    [8, -10],
-    [18, -5],
-    [8, 10],
-    [18, 6],
-    [-10, -20],
-    [10, 20],
-    [-19, 16],
-    [-15, 16],
-    [-19, 19],
-    [-15, 19]
-].forEach(
-    p => createTree(
-        p[0],
-        p[1]
-    )
+/* ============================================================
+   CITY BUILDING LOCATIONS
+   ============================================================ */
+
+createBuilding(-12, -12, 6, 11, 6, 0);
+createBuilding(-20, -12, 5, 7, 5, 2);
+
+createBuilding(12, -12, 6, 13, 6, 1);
+createBuilding(20, -12, 5, 9, 5, 3);
+
+createBuilding(-12, 12, 6, 9, 6, 4);
+createBuilding(-20, 12, 5, 12, 5, 1);
+
+createBuilding(12, 12, 6, 14, 6, 0);
+createBuilding(20, 12, 5, 8, 5, 2);
+
+
+/* ============================================================
+   SPECIAL BUILDING
+   ============================================================ */
+
+function createSpecialBuilding(
+    x,
+    z,
+    color,
+    type
+) {
+
+    const group =
+        new THREE.Group();
+
+
+    const body =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                6,
+                5,
+                5
+            ),
+            makeMaterial(
+                color,
+                0.72
+            )
+        );
+
+    body.position.y = 2.5;
+
+    body.castShadow = true;
+    body.receiveShadow = true;
+
+    group.add(body);
+
+
+    const roof =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                6.5,
+                0.35,
+                5.5
+            ),
+            makeMaterial(
+                0x36414c,
+                0.75
+            )
+        );
+
+    roof.position.y = 5.15;
+
+    group.add(roof);
+
+
+    /* entrance */
+
+    const entrance =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                1.25,
+                2,
+                0.18
+            ),
+            makeMaterial(
+                0x111a21,
+                0.3
+            )
+        );
+
+    entrance.position.set(
+        0,
+        1,
+        2.55
+    );
+
+    group.add(entrance);
+
+
+    /* glowing sign */
+
+    const sign =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                2.8,
+                0.55,
+                0.12
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: color,
+                emissiveIntensity: 1.2
+            })
+        );
+
+    sign.position.set(
+        0,
+        3.65,
+        2.55
+    );
+
+    group.add(sign);
+
+
+    /* hospital cross */
+
+    if (
+        type === "hospital"
+    ) {
+
+        const crossMat =
+            new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0xff2222,
+                emissiveIntensity: 1.5
+            });
+
+
+        const vertical =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    0.34,
+                    1.5,
+                    0.08
+                ),
+                crossMat
+            );
+
+        vertical.position.set(
+            0,
+            3.65,
+            2.64
+        );
+
+        group.add(vertical);
+
+
+        const horizontal =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    1.1,
+                    0.34,
+                    0.08
+                ),
+                crossMat
+            );
+
+        horizontal.position.set(
+            0,
+            3.65,
+            2.64
+        );
+
+        group.add(horizontal);
+
+    }
+
+
+    /* smart hub antenna */
+
+    if (
+        type === "smart"
+    ) {
+
+        const antenna =
+            new THREE.Mesh(
+                new THREE.CylinderGeometry(
+                    0.06,
+                    0.06,
+                    2.4,
+                    8
+                ),
+                makeMaterial(
+                    0x222d36,
+                    0.65
+                )
+            );
+
+        antenna.position.y = 6.3;
+
+        group.add(antenna);
+
+
+        const beacon =
+            new THREE.Mesh(
+                new THREE.SphereGeometry(
+                    0.18,
+                    12,
+                    12
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0x44e6ff,
+                    emissive: 0x44e6ff,
+                    emissiveIntensity: 3
+                })
+            );
+
+        beacon.position.y = 7.55;
+
+        group.add(beacon);
+
+    }
+
+
+    group.position.set(
+        x,
+        0,
+        z
+    );
+
+    scene.add(group);
+
+}
+
+
+createSpecialBuilding(
+    -19,
+    20,
+    0xd83f4b,
+    "hospital"
+);
+
+createSpecialBuilding(
+    19,
+    20,
+    0x239bc8,
+    "smart"
 );
 
 
-// ============================================================
-// STREET LIGHTS
-// ============================================================
+/* ============================================================
+   TREES
+   ============================================================ */
+
+function createTree(
+    x,
+    z,
+    scale = 1
+) {
+
+    const tree =
+        new THREE.Group();
+
+
+    const trunk =
+        new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                0.22,
+                0.32,
+                1.8,
+                10
+            ),
+            makeMaterial(
+                0x5f3c25,
+                0.95
+            )
+        );
+
+    trunk.position.y = 0.9;
+
+    trunk.castShadow = true;
+
+    tree.add(trunk);
+
+
+    const crown =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                1.2,
+                14,
+                12
+            ),
+            makeMaterial(
+                0x176d35,
+                0.95
+            )
+        );
+
+    crown.position.y = 2.35;
+
+    crown.castShadow = true;
+
+    tree.add(crown);
+
+
+    tree.position.set(
+        x,
+        0,
+        z
+    );
+
+    tree.scale.setScalar(scale);
+
+    scene.add(tree);
+
+}
+
+
+/* ============================================================
+   TREES
+   ============================================================ */
+
+[
+    [-8, -10, 1],
+    [-18, -6, 0.85],
+    [-8, 10, 0.95],
+    [-18, 6, 1],
+
+    [8, -10, 1],
+    [18, -6, 0.9],
+    [8, 10, 1],
+    [18, 6, 0.9],
+
+    [-10, -20, 1],
+    [10, 20, 1],
+    [-15, 16, 0.75],
+    [15, 16, 0.75],
+
+    [-10, 20, 0.85],
+    [10, -20, 0.85]
+].forEach(
+    p =>
+        createTree(
+            p[0],
+            p[1],
+            p[2]
+        )
+);
+
+
+/* ============================================================
+   PARK
+   ============================================================ */
+
+function createPark(
+    x,
+    z
+) {
+
+    const base =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                8,
+                0.16,
+                7
+            ),
+            makeMaterial(
+                0x2e8b45,
+                1
+            )
+        );
+
+    base.position.set(
+        x,
+        0.08,
+        z
+    );
+
+    base.receiveShadow = true;
+
+    scene.add(base);
+
+
+    const path =
+        makeMaterial(
+            0xc6b895,
+            0.95
+        );
+
+
+    const p1 =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                1.1,
+                0.04,
+                6.5
+            ),
+            path
+        );
+
+    p1.position.set(
+        x,
+        0.18,
+        z
+    );
+
+    scene.add(p1);
+
+
+    const p2 =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                7.5,
+                0.04,
+                1.0
+            ),
+            path
+        );
+
+    p2.position.set(
+        x,
+        0.19,
+        z
+    );
+
+    scene.add(p2);
+
+
+    createTree(x - 2.5, z - 2, 0.65);
+    createTree(x + 2.5, z - 2, 0.65);
+    createTree(x - 2.5, z + 2, 0.65);
+    createTree(x + 2.5, z + 2, 0.65);
+
+}
+
+
+createPark(
+    -24,
+    -22
+);
+
+
+/* ============================================================
+   BENCHES
+   ============================================================ */
+
+function createBench(
+    x,
+    z,
+    rotation = 0
+) {
+
+    const group =
+        new THREE.Group();
+
+
+    const wood =
+        makeMaterial(
+            0x76502f,
+            0.8
+        );
+
+
+    const seat =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                1.5,
+                0.14,
+                0.42
+            ),
+            wood
+        );
+
+    seat.position.y = 0.65;
+
+    group.add(seat);
+
+
+    const back =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                1.5,
+                0.55,
+                0.12
+            ),
+            wood
+        );
+
+    back.position.set(
+        0,
+        0.95,
+        -0.17
+    );
+
+    group.add(back);
+
+
+    group.position.set(
+        x,
+        0,
+        z
+    );
+
+    group.rotation.y =
+        rotation;
+
+    scene.add(group);
+
+}
+
+
+createBench(
+    -24,
+    -22,
+    0
+);
+
+createBench(
+    -24,
+    -20.3,
+    Math.PI
+);
+
+
+/* ============================================================
+   PARKING
+   ============================================================ */
+
+function createParking(
+    x,
+    z
+) {
+
+    const parking =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                9,
+                0.12,
+                6
+            ),
+            makeMaterial(
+                0x34383c,
+                0.9
+            )
+        );
+
+    parking.position.set(
+        x,
+        0.07,
+        z
+    );
+
+    parking.receiveShadow = true;
+
+    scene.add(parking);
+
+
+    for (
+        let i = -3;
+        i <= 3;
+        i++
+    ) {
+
+        const line =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    0.06,
+                    0.04,
+                    5.2
+                ),
+                whiteMaterial
+            );
+
+        line.position.set(
+            x + i * 1.25,
+            0.15,
+            z
+        );
+
+        scene.add(line);
+
+    }
+
+
+    /* EV chargers */
+
+    for (
+        let i = -1;
+        i <= 1;
+        i++
+    ) {
+
+        const charger =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    0.25,
+                    0.9,
+                    0.25
+                ),
+                makeMaterial(
+                    0x26333c,
+                    0.55
+                )
+            );
+
+        charger.position.set(
+            x + i * 1.7,
+            0.5,
+            z - 2.3
+        );
+
+        scene.add(charger);
+
+
+        const light =
+            new THREE.Mesh(
+                new THREE.SphereGeometry(
+                    0.07,
+                    8,
+                    8
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0x42eaff,
+                    emissive: 0x42eaff,
+                    emissiveIntensity: 3
+                })
+            );
+
+        light.position.set(
+            x + i * 1.7,
+            0.9,
+            z - 2.3
+        );
+
+        scene.add(light);
+
+    }
+
+}
+
+
+createParking(
+    24,
+    -21
+);
+
+
+/* ============================================================
+   STREET LIGHTS
+   ============================================================ */
 
 const streetLights = [];
 
@@ -559,66 +1298,86 @@ function createStreetLight(
 
     const pole =
         new THREE.Mesh(
-
             new THREE.CylinderGeometry(
+                0.09,
                 0.12,
-                0.12,
-                3,
-                12
+                3.2,
+                10
             ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0x222222
-            })
-
+            makeMaterial(
+                0x1b2228,
+                0.7,
+                0.2
+            )
         );
 
-    pole.position.y =
-        1.5;
+    pole.position.y = 1.6;
 
-    group.add(
-        pole
+    pole.castShadow = true;
+
+    group.add(pole);
+
+
+    const arm =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                0.7,
+                0.1,
+                0.1
+            ),
+            makeMaterial(
+                0x1b2228,
+                0.7
+            )
+        );
+
+    arm.position.set(
+        0.3,
+        3.02,
+        0
     );
+
+    group.add(arm);
 
 
     const lamp =
         new THREE.Mesh(
-
             new THREE.SphereGeometry(
-                0.25,
-                16,
-                16
+                0.2,
+                12,
+                12
             ),
-
             new THREE.MeshStandardMaterial({
                 color: 0xffffcc,
-                emissive: 0xffaa00,
+                emissive: 0xffaa33,
                 emissiveIntensity: 2
             })
-
         );
 
-    lamp.position.y =
-        3.1;
-
-    group.add(
-        lamp
+    lamp.position.set(
+        0.65,
+        3,
+        0
     );
 
+    group.add(lamp);
 
-    const light =
+
+    const pointLight =
         new THREE.PointLight(
-            0xffaa55,
+            0xffb45c,
             0,
-            8
+            10,
+            2
         );
 
-    light.position.y =
-        3;
-
-    group.add(
-        light
+    pointLight.position.set(
+        0.65,
+        3,
+        0
     );
+
+    group.add(pointLight);
 
 
     group.position.set(
@@ -627,13 +1386,12 @@ function createStreetLight(
         z
     );
 
-    scene.add(
-        group
-    );
+    scene.add(group);
 
 
     streetLights.push({
-        light
+        light: pointLight,
+        lamp
     });
 
 }
@@ -649,24 +1407,251 @@ function createStreetLight(
     [-3, -15],
     [3, 15]
 ].forEach(
-    p => createStreetLight(
-        p[0],
-        p[1]
-    )
+    p =>
+        createStreetLight(
+            p[0],
+            p[1]
+        )
 );
 
 
-// ============================================================
-// ZEBRA CROSSING
-// ============================================================
+/* ============================================================
+   BUS STOPS
+   ============================================================ */
 
-const zebraMaterial =
-    new THREE.MeshStandardMaterial({
-        color: 0xffffff
-    });
+function createBusStop(
+    x,
+    z,
+    rotation = 0
+) {
+
+    const group =
+        new THREE.Group();
 
 
-function createZebraCrossing(
+    const roof =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                3.4,
+                0.18,
+                1.5
+            ),
+            makeMaterial(
+                0x26323b,
+                0.7,
+                0.15
+            )
+        );
+
+    roof.position.y = 2.6;
+
+    group.add(roof);
+
+
+    const glass =
+        new THREE.MeshStandardMaterial({
+            color: 0x63dfff,
+            transparent: true,
+            opacity: 0.25,
+            roughness: 0.15
+        });
+
+
+    [-1.55, 1.55].forEach(
+        px => {
+
+            const panel =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        0.08,
+                        2.1,
+                        1.35
+                    ),
+                    glass
+                );
+
+            panel.position.set(
+                px,
+                1.35,
+                0
+            );
+
+            group.add(panel);
+
+        }
+    );
+
+
+    const seat =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                2.2,
+                0.15,
+                0.42
+            ),
+            makeMaterial(
+                0x4c555d,
+                0.8
+            )
+        );
+
+    seat.position.y = 0.75;
+
+    group.add(seat);
+
+
+    const busSign =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                0.65,
+                0.65,
+                0.12
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0x45dfff,
+                emissive: 0x45dfff,
+                emissiveIntensity: 2
+            })
+        );
+
+    busSign.position.set(
+        -1.9,
+        2.25,
+        0
+    );
+
+    group.add(busSign);
+
+
+    group.position.set(
+        x,
+        0,
+        z
+    );
+
+    group.rotation.y =
+        rotation;
+
+    scene.add(group);
+
+}
+
+
+createBusStop(
+    -20,
+    5.2,
+    Math.PI / 2
+);
+
+createBusStop(
+    20,
+    -5.2,
+    -Math.PI / 2
+);
+
+
+/* ============================================================
+   ZEBRA CROSSINGS
+   ============================================================ */
+
+function createCrossing(
+    x,
+    z,
+    horizontal
+) {
+
+    for (
+        let i = -4;
+        i <= 4;
+        i++
+    ) {
+
+        let stripe;
+
+
+        if (
+            horizontal
+        ) {
+
+            stripe =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        0.55,
+                        0.07,
+                        4.4
+                    ),
+                    whiteMaterial
+                );
+
+            stripe.position.set(
+                x + i * 0.68,
+                0.17,
+                z
+            );
+
+        }
+
+        else {
+
+            stripe =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        4.4,
+                        0.07,
+                        0.55
+                    ),
+                    whiteMaterial
+                );
+
+            stripe.position.set(
+                x,
+                0.17,
+                z + i * 0.68
+            );
+
+        }
+
+
+        scene.add(stripe);
+
+    }
+
+}
+
+
+createCrossing(
+    -4.5,
+    0,
+    true
+);
+
+createCrossing(
+    4.5,
+    0,
+    true
+);
+
+createCrossing(
+    0,
+    -4.5,
+    false
+);
+
+createCrossing(
+    0,
+    4.5,
+    false
+);
+
+
+/* ============================================================
+   TRAFFIC LIGHTS
+   ============================================================ */
+
+const trafficLights = [];
+
+
+function createTrafficLight(
     x,
     z,
     direction
@@ -676,183 +1661,54 @@ function createZebraCrossing(
         new THREE.Group();
 
 
-    for (
-        let i = -3;
-        i <= 3;
-        i++
-    ) {
-
-        let stripe;
-
-
-        if (
-            direction ===
-            "horizontal"
-        ) {
-
-            stripe =
-                new THREE.Mesh(
-
-                    new THREE.BoxGeometry(
-                        0.5,
-                        0.08,
-                        4
-                    ),
-
-                    zebraMaterial
-
-                );
-
-            stripe.position.x =
-                i * 0.7;
-
-        }
-
-        else {
-
-            stripe =
-                new THREE.Mesh(
-
-                    new THREE.BoxGeometry(
-                        4,
-                        0.08,
-                        0.5
-                    ),
-
-                    zebraMaterial
-
-                );
-
-            stripe.position.z =
-                i * 0.7;
-
-        }
-
-
-        group.add(
-            stripe
-        );
-
-    }
-
-
-    group.position.set(
-        x,
-        0.16,
-        z
-    );
-
-    scene.add(
-        group
-    );
-}
-
-
-// Four crossings
-
-createZebraCrossing(
-    -4.5,
-    0,
-    "horizontal"
-);
-
-createZebraCrossing(
-    4.5,
-    0,
-    "horizontal"
-);
-
-createZebraCrossing(
-    0,
-    -4.5,
-    "vertical"
-);
-
-createZebraCrossing(
-    0,
-    4.5,
-    "vertical"
-);
-
-
-// ============================================================
-// TRAFFIC LIGHTS
-// ============================================================
-
-const trafficLights = [];
-
-
-function createTrafficLight(
-    x,
-    z,
-    controls
-) {
-
-    const group =
-        new THREE.Group();
-
-
     const pole =
         new THREE.Mesh(
-
             new THREE.CylinderGeometry(
-                0.15,
-                0.15,
+                0.12,
+                0.12,
                 4,
-                16
+                10
             ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0x222222
-            })
-
+            makeMaterial(
+                0x111519,
+                0.65
+            )
         );
 
-    pole.position.y =
-        2;
+    pole.position.y = 2;
 
-    group.add(
-        pole
-    );
+    group.add(pole);
 
 
     const box =
         new THREE.Mesh(
-
             new THREE.BoxGeometry(
-                0.8,
+                0.72,
                 1.8,
                 0.5
             ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0x111111
-            })
-
+            makeMaterial(
+                0x0e1114,
+                0.65
+            )
         );
 
-    box.position.y =
-        3.8;
+    box.position.y = 3.8;
 
-    group.add(
-        box
-    );
-
-
-    const sphere =
-        new THREE.SphereGeometry(
-            0.18,
-            16,
-            16
-        );
+    group.add(box);
 
 
     const red =
         new THREE.Mesh(
-            sphere,
+            new THREE.SphereGeometry(
+                0.18,
+                16,
+                16
+            ),
             new THREE.MeshStandardMaterial({
-                color: 0xff0000,
-                emissive: 0x550000
+                color: 0xff2222,
+                emissive: 0xff2222,
+                emissiveIntensity: 0.05
             })
         );
 
@@ -862,17 +1718,20 @@ function createTrafficLight(
         -0.3
     );
 
-    group.add(
-        red
-    );
+    group.add(red);
 
 
     const yellow =
         new THREE.Mesh(
-            sphere,
+            new THREE.SphereGeometry(
+                0.18,
+                16,
+                16
+            ),
             new THREE.MeshStandardMaterial({
-                color: 0xffff00,
-                emissive: 0x555500
+                color: 0xffff22,
+                emissive: 0xffff22,
+                emissiveIntensity: 0.05
             })
         );
 
@@ -882,17 +1741,20 @@ function createTrafficLight(
         -0.3
     );
 
-    group.add(
-        yellow
-    );
+    group.add(yellow);
 
 
     const green =
         new THREE.Mesh(
-            sphere,
+            new THREE.SphereGeometry(
+                0.18,
+                16,
+                16
+            ),
             new THREE.MeshStandardMaterial({
-                color: 0x00ff00,
-                emissive: 0x005500
+                color: 0x20ff55,
+                emissive: 0x20ff55,
+                emissiveIntensity: 0.05
             })
         );
 
@@ -902,9 +1764,7 @@ function createTrafficLight(
         -0.3
     );
 
-    group.add(
-        green
-    );
+    group.add(green);
 
 
     group.position.set(
@@ -913,16 +1773,14 @@ function createTrafficLight(
         z
     );
 
-    scene.add(
-        group
-    );
+    scene.add(group);
 
 
     trafficLights.push({
         red,
         yellow,
         green,
-        controls
+        direction
     });
 
 }
@@ -941,32 +1799,27 @@ createTrafficLight(
 );
 
 
-// ============================================================
-// TRAFFIC STATE
-// ============================================================
+/* ============================================================
+   TRAFFIC STATE
+   ============================================================ */
 
 let trafficState =
     "HORIZONTAL_GREEN";
 
-let trafficTimer =
-    0;
+let trafficTimer = 0;
 
-let currentGreenTime =
-    8;
+let currentGreenTime = 8;
 
-const YELLOW_TIME =
-    2;
+const YELLOW_TIME = 2;
 
 
-// ============================================================
-// CARS
-// ============================================================
+/* ============================================================
+   CARS
+   ============================================================ */
 
 const cars = [];
 
-
-const SAFE_DISTANCE =
-    3.5;
+const SAFE_DISTANCE = 3.4;
 
 
 function createCar(
@@ -982,76 +1835,105 @@ function createCar(
 
     const body =
         new THREE.Mesh(
-
             new THREE.BoxGeometry(
-                1.8,
-                0.6,
-                1
+                1.7,
+                0.55,
+                0.9
             ),
-
-            new THREE.MeshStandardMaterial({
-                color
-            })
-
+            makeMaterial(
+                color,
+                0.55,
+                0.05
+            )
         );
 
-    body.position.y =
-        0.5;
+    body.position.y = 0.48;
 
-    car.add(
-        body
-    );
+    body.castShadow = true;
+
+    car.add(body);
 
 
-    const roof =
+    const cabin =
         new THREE.Mesh(
-
             new THREE.BoxGeometry(
-                1,
-                0.45,
-                0.8
+                0.95,
+                0.43,
+                0.72
             ),
-
-            new THREE.MeshStandardMaterial({
-                color
-            })
-
+            makeMaterial(
+                color,
+                0.5,
+                0.05
+            )
         );
 
-    roof.position.y =
-        1;
+    cabin.position.y = 0.9;
 
-    car.add(
-        roof
+    cabin.castShadow = true;
+
+    car.add(cabin);
+
+
+    const glass =
+        makeMaterial(
+            0x142530,
+            0.18,
+            0.3
+        );
+
+
+    const frontGlass =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                0.05,
+                0.28,
+                0.58
+            ),
+            glass
+        );
+
+    frontGlass.position.set(
+        0.48,
+        0.91,
+        0
     );
 
+    car.add(frontGlass);
 
-    const wheelGeometry =
-        new THREE.CylinderGeometry(
-            0.22,
-            0.22,
-            0.15,
-            16
-        );
+
+    const backGlass =
+        frontGlass.clone();
+
+    backGlass.position.x =
+        -0.48;
+
+    car.add(backGlass);
 
 
     const wheelMaterial =
-        new THREE.MeshStandardMaterial({
-            color: 0x111111
-        });
+        makeMaterial(
+            0x111111,
+            0.85
+        );
 
 
     [
-        [-0.65, 0.25, 0.5],
-        [0.65, 0.25, 0.5],
-        [-0.65, 0.25, -0.5],
-        [0.65, 0.25, -0.5]
+        [-0.62, 0.28, 0.47],
+        [0.62, 0.28, 0.47],
+        [-0.62, 0.28, -0.47],
+        [0.62, 0.28, -0.47]
     ].forEach(
         p => {
 
             const wheel =
                 new THREE.Mesh(
-                    wheelGeometry,
+                    new THREE.CylinderGeometry(
+                        0.21,
+                        0.21,
+                        0.14,
+                        14
+                    ),
                     wheelMaterial
                 );
 
@@ -1064,9 +1946,7 @@ function createCar(
                 p[2]
             );
 
-            car.add(
-                wheel
-            );
+            car.add(wheel);
 
         }
     );
@@ -1082,716 +1962,97 @@ function createCar(
     car.userData.direction =
         direction;
 
+    car.userData.baseSpeed =
+        3.0 +
+        Math.random() * 1.1;
 
-    scene.add(
-        car
-    );
+    car.userData.currentSpeed = 0;
 
-    cars.push(
-        car
-    );
-}
 
-
-// ============================================================
-// INITIAL CARS
-// ============================================================
-
-// Horizontal
-
-createCar(
-    0xff0000,
-    -20,
-    -1.5,
-    "right"
-);
-
-createCar(
-    0xff8800,
-    -12,
-    -1.5,
-    "right"
-);
-
-createCar(
-    0x00cc88,
-    -4,
-    -1.5,
-    "right"
-);
-
-
-createCar(
-    0x0066ff,
-    20,
-    1.5,
-    "left"
-);
-
-createCar(
-    0xffff00,
-    12,
-    1.5,
-    "left"
-);
-
-createCar(
-    0xff55aa,
-    4,
-    1.5,
-    "left"
-);
-
-
-// Vertical
-
-createCar(
-    0xffffff,
-    1.5,
-    -20,
-    "down"
-);
-
-createCar(
-    0xffcc00,
-    1.5,
-    -12,
-    "down"
-);
-
-createCar(
-    0x00aaff,
-    1.5,
-    -4,
-    "down"
-);
-
-
-createCar(
-    0xaa0000,
-    -1.5,
-    20,
-    "up"
-);
-
-createCar(
-    0x0088ff,
-    -1.5,
-    12,
-    "up"
-);
-
-createCar(
-    0x55aa00,
-    -1.5,
-    4,
-    "up"
-);
-
-
-// ============================================================
-// PEDESTRIANS
-// ============================================================
-
-const pedestrians = [];
-
-
-function createPedestrian(
-    x,
-    z,
-    direction
-) {
-
-    const person =
-        new THREE.Group();
-
-
-    const body =
-        new THREE.Mesh(
-
-            new THREE.BoxGeometry(
-                0.35,
-                0.8,
-                0.35
-            ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0x3366ff
-            })
-
-        );
-
-    body.position.y =
-        0.65;
-
-    person.add(
-        body
-    );
-
-
-    const head =
-        new THREE.Mesh(
-
-            new THREE.SphereGeometry(
-                0.22,
-                12,
-                12
-            ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0xffcc99
-            })
-
-        );
-
-    head.position.y =
-        1.25;
-
-    person.add(
-        head
-    );
-
-
-    person.position.set(
-        x,
-        0,
-        z
-    );
-
-
-    person.userData.direction =
-        direction;
-
-    person.userData.crossing =
-        false;
-
-
-    scene.add(
-        person
-    );
-
-    pedestrians.push(
-        person
-    );
-}
-
-
-// These pedestrians cross
-// the horizontal road.
-
-createPedestrian(
-    -4.5,
-    -4.5,
-    "up"
-);
-
-createPedestrian(
-    4.5,
-    4.5,
-    "down"
-);
-
-
-// ============================================================
-// PEDESTRIAN CROSSING CONTROL
-// ============================================================
-
-let pedestrianCrossingActive =
-    false;
-
-
-function isPedestrianCrossing() {
-
-    return pedestrians.some(
-        person =>
-            person.userData.crossing
-    );
-
-}
-
-
-// ============================================================
-// GET CAR AHEAD
-// ============================================================
-
-function getCarAhead(
-    currentCar
-) {
-
-    const direction =
-        currentCar.userData.direction;
-
-
-    let closestCar =
-        null;
-
-    let closestDistance =
-        Infinity;
-
-
-    cars.forEach(
-        other => {
-
-            if (
-                other ===
-                currentCar
-            ) {
-
-                return;
-
-            }
-
-
-            if (
-                other.userData.direction !==
-                direction
-            ) {
-
-                return;
-
-            }
-
-
-            let distance =
-                Infinity;
-
-
-            if (
-                direction === "right" &&
-                other.position.x >
-                currentCar.position.x
-            ) {
-
-                distance =
-                    other.position.x -
-                    currentCar.position.x;
-
-            }
-
-
-            if (
-                direction === "left" &&
-                other.position.x <
-                currentCar.position.x
-            ) {
-
-                distance =
-                    currentCar.position.x -
-                    other.position.x;
-
-            }
-
-
-            if (
-                direction === "down" &&
-                other.position.z >
-                currentCar.position.z
-            ) {
-
-                distance =
-                    other.position.z -
-                    currentCar.position.z;
-
-            }
-
-
-            if (
-                direction === "up" &&
-                other.position.z <
-                currentCar.position.z
-            ) {
-
-                distance =
-                    currentCar.position.z -
-                    other.position.z;
-
-            }
-
-
-            if (
-                distance > 0 &&
-                distance <
-                closestDistance
-            ) {
-
-                closestDistance =
-                    distance;
-
-                closestCar =
-                    other;
-
-            }
-
-        }
-    );
-
-
-    return {
-        car:
-            closestCar,
-        distance:
-            closestDistance
-    };
-
-}
-
-
-// ============================================================
-// HARD PEDESTRIAN BARRIER
-// ============================================================
-//
-// IMPORTANT:
-// Cars are stopped BEFORE entering the crosswalk.
-// They don't wait until they are already on the pedestrian.
-//
-// ============================================================
-
-function pedestrianBarrier(
-    car
-) {
-
-    const direction =
-        car.userData.direction;
-
-
-    for (
-        const person of pedestrians
+    if (
+        direction === "right"
     ) {
 
-        if (
-            !person.userData.crossing
-        ) {
+        car.rotation.y = 0;
 
-            continue;
+    }
 
-        }
+    else if (
+        direction === "left"
+    ) {
 
+        car.rotation.y = Math.PI;
 
-        const px =
-            person.position.x;
+    }
 
-        const pz =
-            person.position.z;
+    else if (
+        direction === "down"
+    ) {
 
+        car.rotation.y =
+            Math.PI / 2;
 
-        // ====================================================
-        // HORIZONTAL CAR
-        // ====================================================
+    }
 
-        if (
-            direction === "right" ||
-            direction === "left"
-        ) {
+    else {
 
-            // Pedestrian is crossing
-            // horizontal road.
-
-            if (
-                Math.abs(
-                    pz
-                ) < 3
-            ) {
-
-                // LEFT CROSSING
-                //
-                // Crossing center = x -4.5
-
-                if (
-                    Math.abs(
-                        px + 4.5
-                    ) < 3
-                ) {
-
-                    if (
-                        direction === "right"
-                    ) {
-
-                        // Stop BEFORE x = -6
-
-                        if (
-                            car.position.x <
-                            -2.8
-                        ) {
-
-                            return true;
-
-                        }
-
-                    }
-
-
-                    if (
-                        direction === "left"
-                    ) {
-
-                        if (
-                            car.position.x >
-                            -6.2
-                        ) {
-
-                            return true;
-
-                        }
-
-                    }
-
-                }
-
-
-                // RIGHT CROSSING
-                //
-                // Crossing center = x +4.5
-
-                if (
-                    Math.abs(
-                        px - 4.5
-                    ) < 3
-                ) {
-
-                    if (
-                        direction === "right"
-                    ) {
-
-                        if (
-                            car.position.x <
-                            2.8
-                        ) {
-
-                            return true;
-
-                        }
-
-                    }
-
-
-                    if (
-                        direction === "left"
-                    ) {
-
-                        if (
-                            car.position.x >
-                            6.2
-                        ) {
-
-                            return true;
-
-                        }
-
-                    }
-
-                }
-
-            }
-
-        }
-
-
-        // ====================================================
-        // VERTICAL CAR
-        // ====================================================
-
-        if (
-            direction === "up" ||
-            direction === "down"
-        ) {
-
-            // Safety around intersection
-
-            if (
-                Math.abs(px) < 3 &&
-                Math.abs(pz) < 5
-            ) {
-
-                if (
-                    Math.abs(
-                        car.position.x -
-                        px
-                    ) < 3
-                ) {
-
-                    if (
-                        direction === "down"
-                    ) {
-
-                        if (
-                            car.position.z <
-                            6
-                        ) {
-
-                            return true;
-
-                        }
-
-                    }
-
-
-                    if (
-                        direction === "up"
-                    ) {
-
-                        if (
-                            car.position.z >
-                            -6
-                        ) {
-
-                            return true;
-
-                        }
-
-                    }
-
-                }
-
-            }
-
-        }
+        car.rotation.y =
+            -Math.PI / 2;
 
     }
 
 
-    return false;
+    scene.add(car);
+
+    cars.push(car);
 
 }
 
 
-// ============================================================
-// MOVE PEDESTRIANS
-// ============================================================
+/* ============================================================
+   INITIAL TRAFFIC
+   ============================================================ */
 
-function movePedestrians() {
+createCar(0xe83b3b, -20, -1.5, "right");
+createCar(0xf28c28, -12, -1.5, "right");
+createCar(0x19c58a, -4, -1.5, "right");
 
-    pedestrianCrossingActive =
-        false;
+createCar(0x287cff, 20, 1.5, "left");
+createCar(0xf4d738, 12, 1.5, "left");
+createCar(0xe85aaa, 4, 1.5, "left");
 
+createCar(0xf5f5f5, 1.5, -20, "down");
+createCar(0xffb52e, 1.5, -12, "down");
+createCar(0x22aadd, 1.5, -4, "down");
 
-    pedestrians.forEach(
-        person => {
-
-            // Pedestrians may only STEP OFF the curb
-            // when horizontal traffic is RED. But once
-            // they're already on the crosswalk, they
-            // keep walking (and stay protected) until
-            // they reach the other side, even if the
-            // light changes underneath them.
-
-            const safePhase =
-                trafficState ===
-                "VERTICAL_GREEN";
+createCar(0xaa2222, -1.5, 20, "up");
+createCar(0x2288ff, -1.5, 12, "up");
+createCar(0x65ad36, -1.5, 4, "up");
 
 
-            if (
-                !person.userData.crossing
-            ) {
+/* ============================================================
+   AI TRAFFIC DATA
+   ============================================================ */
 
-                if (
-                    !safePhase
-                ) {
-
-                    return;
-
-                }
-
-                person.userData.crossing =
-                    true;
-
-            }
-
-
-            pedestrianCrossingActive =
-                true;
-
-
-            const speed =
-                0.025;
-
-
-            if (
-                person.userData.direction ===
-                "up"
-            ) {
-
-                person.position.z +=
-                    speed;
-
-
-                if (
-                    person.position.z >
-                    4.5
-                ) {
-
-                    person.position.z =
-                        -4.5;
-
-                    person.userData.crossing =
-                        false;
-
-                }
-
-            }
-
-
-            if (
-                person.userData.direction ===
-                "down"
-            ) {
-
-                person.position.z -=
-                    speed;
-
-
-                if (
-                    person.position.z <
-                    -4.5
-                ) {
-
-                    person.position.z =
-                        4.5;
-
-                    person.userData.crossing =
-                        false;
-
-                }
-
-            }
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// TRAFFIC COUNTER
-// ============================================================
-
-let horizontalTraffic =
-    0;
-
-let verticalTraffic =
-    0;
+let horizontalTraffic = 6;
+let verticalTraffic = 6;
 
 let aiDecision =
-    "AI analyzing traffic...";
+    "AI detected balanced traffic";
 
 
 function calculateTraffic() {
 
-    horizontalTraffic =
-        0;
-
-    verticalTraffic =
-        0;
+    horizontalTraffic = 0;
+    verticalTraffic = 0;
 
 
     cars.forEach(
         car => {
 
             if (
-                car.userData.direction ===
-                "right" ||
-
-                car.userData.direction ===
-                "left"
+                car.userData.direction === "right" ||
+                car.userData.direction === "left"
             ) {
 
                 horizontalTraffic++;
@@ -1810,46 +2071,34 @@ function calculateTraffic() {
 }
 
 
-// ============================================================
-// AI GREEN TIME
-// ============================================================
+/* ============================================================
+   AI SIGNAL TIME
+   ============================================================ */
 
-function calculateAIGreenTime(
-    count
+function calculateGreenTime(
+    traffic
 ) {
 
-    if (
-        count >= 5
-    ) {
+    if (traffic >= 6)
+        return 15;
 
-        return 12;
+    if (traffic >= 5)
+        return 13;
 
-    }
+    if (traffic >= 4)
+        return 11;
 
-    if (
-        count >= 4
-    ) {
+    if (traffic >= 3)
+        return 9;
 
-        return 10;
-
-    }
-
-    if (
-        count >= 2
-    ) {
-
-        return 8;
-
-    }
-
-    return 6;
+    return 7;
 
 }
 
 
-// ============================================================
-// SELECT NEXT SIGNAL
-// ============================================================
+/* ============================================================
+   SIGNAL SELECTION
+   ============================================================ */
 
 function selectNextGreen() {
 
@@ -1865,7 +2114,7 @@ function selectNextGreen() {
             "HORIZONTAL_GREEN";
 
         currentGreenTime =
-            calculateAIGreenTime(
+            calculateGreenTime(
                 horizontalTraffic
             );
 
@@ -1883,7 +2132,7 @@ function selectNextGreen() {
             "VERTICAL_GREEN";
 
         currentGreenTime =
-            calculateAIGreenTime(
+            calculateGreenTime(
                 verticalTraffic
             );
 
@@ -1894,26 +2143,14 @@ function selectNextGreen() {
 
     else {
 
-        if (
+        trafficState =
             trafficState.includes(
                 "HORIZONTAL"
             )
-        ) {
+                ? "VERTICAL_GREEN"
+                : "HORIZONTAL_GREEN";
 
-            trafficState =
-                "VERTICAL_GREEN";
-
-        }
-
-        else {
-
-            trafficState =
-                "HORIZONTAL_GREEN";
-
-        }
-
-        currentGreenTime =
-            8;
+        currentGreenTime = 10;
 
         aiDecision =
             "AI detected balanced traffic";
@@ -1921,15 +2158,14 @@ function selectNextGreen() {
     }
 
 
-    trafficTimer =
-        0;
+    trafficTimer = 0;
 
 }
 
 
-// ============================================================
-// UPDATE SIGNAL LIGHTS
-// ============================================================
+/* ============================================================
+   UPDATE SIGNAL VISUALS
+   ============================================================ */
 
 function updateTrafficLights() {
 
@@ -1937,56 +2173,48 @@ function updateTrafficLights() {
         signal => {
 
             signal.red.material
-                .emissiveIntensity =
-                0.1;
+                .emissiveIntensity = 0.08;
 
             signal.yellow.material
-                .emissiveIntensity =
-                0.1;
+                .emissiveIntensity = 0.08;
 
             signal.green.material
-                .emissiveIntensity =
-                0.1;
+                .emissiveIntensity = 0.08;
 
 
-            const isGreen =
-                trafficState ===
-                (signal.controls === "horizontal"
-                    ? "HORIZONTAL_GREEN"
-                    : "VERTICAL_GREEN");
-
-            const isYellow =
-                trafficState ===
-                (signal.controls === "horizontal"
-                    ? "HORIZONTAL_YELLOW"
-                    : "VERTICAL_YELLOW");
+            const greenDirection =
+                signal.direction ===
+                "horizontal"
+                    ? "HORIZONTAL"
+                    : "VERTICAL";
 
 
             if (
-                isGreen
+                trafficState ===
+                greenDirection +
+                "_GREEN"
             ) {
 
                 signal.green.material
-                    .emissiveIntensity =
-                    1;
+                    .emissiveIntensity = 3;
 
             }
 
             else if (
-                isYellow
+                trafficState ===
+                greenDirection +
+                "_YELLOW"
             ) {
 
                 signal.yellow.material
-                    .emissiveIntensity =
-                    1;
+                    .emissiveIntensity = 3;
 
             }
 
             else {
 
                 signal.red.material
-                    .emissiveIntensity =
-                    1;
+                    .emissiveIntensity = 3;
 
             }
 
@@ -1996,18 +2224,13 @@ function updateTrafficLights() {
 }
 
 
-// ============================================================
-// TRAFFIC SYSTEM
-// ============================================================
+/* ============================================================
+   TRAFFIC SYSTEM
+   ============================================================ */
 
 function updateTrafficSystem(
-    deltaTime
+    delta
 ) {
-
-    // While the ambulance is still moving through
-    // the intersection, keep the signal pinned to
-    // HORIZONTAL_GREEN no matter how long it takes
-    // (e.g. if it got briefly stuck behind traffic).
 
     if (
         emergencyMode
@@ -2016,8 +2239,7 @@ function updateTrafficSystem(
         trafficState =
             "HORIZONTAL_GREEN";
 
-        trafficTimer =
-            0;
+        trafficTimer = 0;
 
         updateTrafficLights();
 
@@ -2026,16 +2248,13 @@ function updateTrafficSystem(
     }
 
 
-    trafficTimer +=
-        deltaTime;
+    trafficTimer += delta;
 
 
     if (
-        trafficState ===
-        "HORIZONTAL_GREEN" ||
-
-        trafficState ===
-        "VERTICAL_GREEN"
+        trafficState.includes(
+            "GREEN"
+        )
     ) {
 
         if (
@@ -2043,25 +2262,14 @@ function updateTrafficSystem(
             currentGreenTime
         ) {
 
-            if (
-                trafficState ===
-                "HORIZONTAL_GREEN"
-            ) {
+            trafficState =
+                trafficState.includes(
+                    "HORIZONTAL"
+                )
+                    ? "HORIZONTAL_YELLOW"
+                    : "VERTICAL_YELLOW";
 
-                trafficState =
-                    "HORIZONTAL_YELLOW";
-
-            }
-
-            else {
-
-                trafficState =
-                    "VERTICAL_YELLOW";
-
-            }
-
-            trafficTimer =
-                0;
+            trafficTimer = 0;
 
         }
 
@@ -2086,121 +2294,187 @@ function updateTrafficSystem(
 }
 
 
-// ============================================================
-// SIGNAL STOP
-// ============================================================
+/* ============================================================
+   CAR AHEAD
+   ============================================================ */
 
-function shouldStopAtSignal(
+function getCarAhead(
+    current
+) {
+
+    let closest = null;
+
+    let distance = Infinity;
+
+    const direction =
+        current.userData.direction;
+
+
+    cars.forEach(
+        other => {
+
+            if (
+                other === current
+            )
+                return;
+
+
+            if (
+                other.userData.direction !==
+                direction
+            )
+                return;
+
+
+            let d = Infinity;
+
+
+            if (
+                direction === "right" &&
+                other.position.x >
+                current.position.x
+            ) {
+
+                d =
+                    other.position.x -
+                    current.position.x;
+
+            }
+
+
+            if (
+                direction === "left" &&
+                other.position.x <
+                current.position.x
+            ) {
+
+                d =
+                    current.position.x -
+                    other.position.x;
+
+            }
+
+
+            if (
+                direction === "down" &&
+                other.position.z >
+                current.position.z
+            ) {
+
+                d =
+                    other.position.z -
+                    current.position.z;
+
+            }
+
+
+            if (
+                direction === "up" &&
+                other.position.z <
+                current.position.z
+            ) {
+
+                d =
+                    current.position.z -
+                    other.position.z;
+
+            }
+
+
+            if (
+                d > 0 &&
+                d < distance
+            ) {
+
+                distance = d;
+                closest = other;
+
+            }
+
+        }
+    );
+
+
+    return {
+        car: closest,
+        distance
+    };
+
+}
+
+
+/* ============================================================
+   SIGNAL STOP LOGIC
+   ============================================================ */
+
+function shouldStop(
     car
 ) {
 
-    const direction =
+    const d =
         car.userData.direction;
 
 
-    // ========================================================
-    // PEDESTRIAN BARRIER HAS PRIORITY
-    // ========================================================
-
     if (
-        pedestrianBarrier(
-            car
-        )
+        d === "right"
     ) {
 
-        return true;
-
-    }
-
-
-    // ========================================================
-    // NORMAL SIGNAL
-    // ========================================================
-
-    if (
-        direction === "right"
-    ) {
-
-        if (
+        return (
             trafficState !==
             "HORIZONTAL_GREEN" &&
 
-            car.position.x >=
-            -8 &&
+            car.position.x >= -8 &&
 
-            car.position.x <=
-            -3
-        ) {
-
-            return true;
-
-        }
+            car.position.x <= -3
+        );
 
     }
 
 
     if (
-        direction === "left"
+        d === "left"
     ) {
 
-        if (
+        return (
             trafficState !==
             "HORIZONTAL_GREEN" &&
 
-            car.position.x <=
-            8 &&
+            car.position.x <= 8 &&
 
-            car.position.x >=
-            3
-        ) {
-
-            return true;
-
-        }
+            car.position.x >= 3
+        );
 
     }
 
 
     if (
-        direction === "down"
+        d === "down"
     ) {
 
-        if (
+        return (
             trafficState !==
             "VERTICAL_GREEN" &&
 
-            car.position.z >=
-            -8 &&
+            car.position.z >= -8 &&
 
-            car.position.z <=
-            -3
-        ) {
-
-            return true;
-
-        }
+            car.position.z <= -3
+        );
 
     }
 
 
     if (
-        direction === "up"
+        d === "up"
     ) {
 
-        if (
+        return (
             trafficState !==
             "VERTICAL_GREEN" &&
 
-            car.position.z <=
-            8 &&
+            car.position.z <= 8 &&
 
-            car.position.z >=
-            3
-        ) {
-
-            return true;
-
-        }
+            car.position.z >= 3
+        );
 
     }
 
@@ -2210,31 +2484,23 @@ function shouldStopAtSignal(
 }
 
 
-// ============================================================
-// MOVE CARS
-// ============================================================
+/* ============================================================
+   MOVE CARS
+   ============================================================ */
 
-function moveCars() {
+function moveCars(
+    delta
+) {
 
     cars.forEach(
         car => {
 
-            const direction =
-                car.userData.direction;
-
-
             let speed =
-                0.05;
+                car.userData.baseSpeed;
 
-
-            // =================================================
-            // CAR AHEAD
-            // =================================================
 
             const ahead =
-                getCarAhead(
-                    car
-                );
+                getCarAhead(car);
 
 
             if (
@@ -2243,31 +2509,19 @@ function moveCars() {
                 SAFE_DISTANCE
             ) {
 
-                speed =
-                    0;
+                speed = 0;
 
             }
 
-
-            // =================================================
-            // SIGNAL + PEDESTRIAN
-            // =================================================
 
             if (
-                shouldStopAtSignal(
-                    car
-                )
+                shouldStop(car)
             ) {
 
-                speed =
-                    0;
+                speed = 0;
 
             }
 
-
-            // =================================================
-            // YELLOW
-            // =================================================
 
             if (
                 trafficState.includes(
@@ -2278,108 +2532,74 @@ function moveCars() {
                 speed =
                     Math.min(
                         speed,
-                        0.02
+                        1.0
                     );
 
             }
 
 
-            // =================================================
-            // MOVE RIGHT
-            // =================================================
+            car.userData.currentSpeed =
+                speed;
 
-            if (
-                direction === "right"
+
+            const move =
+                speed * delta;
+
+
+            switch (
+                car.userData.direction
             ) {
 
-                car.position.x +=
-                    speed;
+                case "right":
+
+                    car.position.x +=
+                        move;
+
+                    if (
+                        car.position.x > 42
+                    )
+                        car.position.x = -42;
+
+                    break;
 
 
-                if (
-                    car.position.x >
-                    25
-                ) {
+                case "left":
 
-                    car.position.x =
-                        -25;
+                    car.position.x -=
+                        move;
 
-                }
+                    if (
+                        car.position.x < -42
+                    )
+                        car.position.x = 42;
 
-            }
-
-
-            // =================================================
-            // MOVE LEFT
-            // =================================================
-
-            if (
-                direction === "left"
-            ) {
-
-                car.position.x -=
-                    speed;
+                    break;
 
 
-                if (
-                    car.position.x <
-                    -25
-                ) {
+                case "down":
 
-                    car.position.x =
-                        25;
+                    car.position.z +=
+                        move;
 
-                }
+                    if (
+                        car.position.z > 42
+                    )
+                        car.position.z = -42;
 
-            }
-
-
-            // =================================================
-            // MOVE DOWN
-            // =================================================
-
-            if (
-                direction === "down"
-            ) {
-
-                car.position.z +=
-                    speed;
+                    break;
 
 
-                if (
-                    car.position.z >
-                    25
-                ) {
+                case "up":
 
-                    car.position.z =
-                        -25;
+                    car.position.z -=
+                        move;
 
-                }
+                    if (
+                        car.position.z < -42
+                    )
+                        car.position.z = 42;
 
-            }
-
-
-            // =================================================
-            // MOVE UP
-            // =================================================
-
-            if (
-                direction === "up"
-            ) {
-
-                car.position.z -=
-                    speed;
-
-
-                if (
-                    car.position.z <
-                    -25
-                ) {
-
-                    car.position.z =
-                        25;
-
-                }
+                    break;
 
             }
 
@@ -2389,15 +2609,13 @@ function moveCars() {
 }
 
 
-// ============================================================
-// AMBULANCE
-// ============================================================
+/* ============================================================
+   AMBULANCE
+   ============================================================ */
 
-let ambulance =
-    null;
+let ambulance = null;
 
-let emergencyMode =
-    false;
+let emergencyMode = false;
 
 
 function createAmbulance() {
@@ -2408,100 +2626,126 @@ function createAmbulance() {
 
     const body =
         new THREE.Mesh(
-
             new THREE.BoxGeometry(
-                2.2,
-                0.8,
-                1.1
+                2.3,
+                0.82,
+                1.05
             ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0xffffff
-            })
-
+            makeMaterial(
+                0xf4f4f4,
+                0.5
+            )
         );
 
-    body.position.y =
-        0.6;
+    body.position.y = 0.58;
 
-    ambulance.add(
-        body
-    );
+    body.castShadow = true;
+
+    ambulance.add(body);
 
 
-    const stripe =
+    const redStripe =
         new THREE.Mesh(
-
             new THREE.BoxGeometry(
-                2.25,
-                0.18,
-                1.12
+                2.35,
+                0.16,
+                1.08
             ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0xff0000
-            })
-
+            makeMaterial(
+                0xd71920,
+                0.5
+            )
         );
 
-    stripe.position.y =
-        0.75;
+    redStripe.position.y = 0.75;
 
-    ambulance.add(
-        stripe
-    );
+    ambulance.add(redStripe);
 
 
-    const roof =
+    const cabin =
         new THREE.Mesh(
-
             new THREE.BoxGeometry(
                 1.2,
-                0.5,
-                0.9
+                0.55,
+                0.88
             ),
-
-            new THREE.MeshStandardMaterial({
-                color: 0xffffff
-            })
-
+            makeMaterial(
+                0xffffff,
+                0.45
+            )
         );
 
-    roof.position.y =
-        1.25;
+    cabin.position.y = 1.25;
 
-    ambulance.add(
-        roof
+    ambulance.add(cabin);
+
+
+    const crossMat =
+        new THREE.MeshStandardMaterial({
+            color: 0xff2020,
+            emissive: 0xff0000,
+            emissiveIntensity: 1
+        });
+
+
+    const crossV =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                0.14,
+                0.65,
+                0.05
+            ),
+            crossMat
+        );
+
+    crossV.position.set(
+        0.15,
+        1.27,
+        0.47
     );
+
+    ambulance.add(crossV);
+
+
+    const crossH =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                0.55,
+                0.14,
+                0.05
+            ),
+            crossMat
+        );
+
+    crossH.position.set(
+        0.15,
+        1.27,
+        0.47
+    );
+
+    ambulance.add(crossH);
 
 
     const siren =
         new THREE.Mesh(
-
             new THREE.BoxGeometry(
                 0.5,
                 0.18,
                 0.25
             ),
-
             new THREE.MeshStandardMaterial({
-
-                color: 0xff0000,
-
+                color: 0xff2020,
                 emissive: 0xff0000,
-
                 emissiveIntensity: 2
-
             })
-
         );
 
-    siren.position.y =
-        1.55;
+    siren.position.y = 1.65;
 
-    ambulance.add(
-        siren
-    );
+    ambulance.add(siren);
+
+    ambulance.userData.siren =
+        siren;
 
 
     ambulance.position.set(
@@ -2510,10 +2754,7 @@ function createAmbulance() {
         -1.5
     );
 
-
-    scene.add(
-        ambulance
-    );
+    scene.add(ambulance);
 
 }
 
@@ -2521,14 +2762,12 @@ function createAmbulance() {
 createAmbulance();
 
 
-// ============================================================
-// EMERGENCY BUTTON
-// ============================================================
+/* ============================================================
+   EMERGENCY UI
+   ============================================================ */
 
 const emergencyButton =
-    document.createElement(
-        "button"
-    );
+    document.createElement("button");
 
 emergencyButton.textContent =
     "🚑 Trigger Emergency";
@@ -2541,55 +2780,52 @@ document.body.appendChild(
 );
 
 
-// ============================================================
-// EMERGENCY PANEL
-// ============================================================
+const emergencyBanner =
+    document.createElement("div");
 
-const emergencyPanel =
-    document.createElement(
-        "div"
-    );
-
-emergencyPanel.className =
+emergencyBanner.className =
     "emergency-banner";
 
-emergencyPanel.innerHTML =
+emergencyBanner.textContent =
     "🚨 EMERGENCY MODE ACTIVE";
 
 document.body.appendChild(
-    emergencyPanel
+    emergencyBanner
 );
 
 
-// ============================================================
-// EMERGENCY
-// ============================================================
+/* ============================================================
+   EMERGENCY
+   ============================================================ */
 
 function triggerEmergency() {
 
-    emergencyMode =
-        true;
+    if (
+        emergencyMode
+    )
+        return;
 
 
-    ambulance.position.x =
-        -23;
+    emergencyMode = true;
 
-    ambulance.position.z =
-        -1.5;
+
+    ambulance.position.set(
+        -23,
+        0,
+        -1.5
+    );
 
 
     trafficState =
         "HORIZONTAL_GREEN";
 
-    trafficTimer =
-        0;
+    trafficTimer = 0;
 
-    currentGreenTime =
-        15;
+    currentGreenTime = 15;
 
 
     aiDecision =
-        "Emergency vehicle detected - signal priority activated";
+        "Emergency vehicle detected — signal priority activated";
 
 
     emergencyButton.textContent =
@@ -2600,7 +2836,7 @@ function triggerEmergency() {
     );
 
 
-    emergencyPanel.classList.add(
+    emergencyBanner.classList.add(
         "is-visible"
     );
 
@@ -2613,150 +2849,53 @@ emergencyButton.addEventListener(
 );
 
 
-// ============================================================
-// AMBULANCE SAFETY
-// ============================================================
+/* ============================================================
+   MOVE AMBULANCE
+   ============================================================ */
 
-function ambulanceCarAhead() {
-
-    let closest =
-        null;
-
-    let distance =
-        Infinity;
-
-
-    cars.forEach(
-        car => {
-
-            if (
-                car.userData.direction !==
-                "right"
-            ) {
-
-                return;
-
-            }
-
-
-            if (
-                Math.abs(
-                    car.position.z -
-                    ambulance.position.z
-                ) > 1
-            ) {
-
-                return;
-
-            }
-
-
-            if (
-                car.position.x <=
-                ambulance.position.x
-            ) {
-
-                return;
-
-            }
-
-
-            const d =
-                car.position.x -
-                ambulance.position.x;
-
-
-            if (
-                d <
-                distance
-            ) {
-
-                distance =
-                    d;
-
-                closest =
-                    car;
-
-            }
-
-        }
-    );
-
-
-    return {
-        car:
-            closest,
-        distance
-    };
-
-}
-
-
-// ============================================================
-// MOVE AMBULANCE
-// ============================================================
-
-function moveAmbulance() {
+function moveAmbulance(
+    delta
+) {
 
     if (
         !emergencyMode
-    ) {
-
+    )
         return;
-
-    }
-
-
-    const ahead =
-        ambulanceCarAhead();
-
-
-    let speed =
-        0.07;
-
-
-    if (
-        ahead.car &&
-        ahead.distance <
-        4.5
-    ) {
-
-        speed =
-            0;
-
-    }
 
 
     ambulance.position.x +=
-        speed;
+        3.8 * delta;
+
+
+    ambulance.userData.siren
+        .material
+        .emissiveIntensity =
+        Math.sin(
+            performance.now() *
+            0.015
+        ) > 0
+            ? 3.5
+            : 0.2;
 
 
     if (
-        ambulance.position.x >
-        26
+        ambulance.position.x > 43
     ) {
 
-        emergencyMode =
-            false;
+        emergencyMode = false;
 
-
-        ambulance.position.x =
-            -23;
-
+        ambulance.position.x = -23;
 
         emergencyButton.textContent =
             "🚑 Trigger Emergency";
-
 
         emergencyButton.classList.remove(
             "is-active"
         );
 
-
-        emergencyPanel.classList.remove(
+        emergencyBanner.classList.remove(
             "is-visible"
         );
-
 
         selectNextGreen();
 
@@ -2765,48 +2904,46 @@ function moveAmbulance() {
 }
 
 
-// ============================================================
-// AI PANEL
-// ============================================================
+/* ============================================================
+   AI PANEL
+   ============================================================ */
 
 const aiPanel =
-    document.createElement(
-        "div"
-    );
+    document.createElement("div");
 
 aiPanel.className =
     "hud-panel ai-panel";
 
-
 aiPanel.innerHTML = `
 
-<div class="ai-panel-title">
-AI Traffic Control
-</div>
+    <div class="ai-panel-title">
+        AI Traffic Control
+    </div>
 
-<div class="ai-panel-mode">
-<span class="pulse-dot"></span>
-AI mode active
-</div>
+    <div class="ai-panel-mode">
+        <span class="pulse-dot"></span>
+        AI MODE ACTIVE
+    </div>
 
-<div class="ai-metric">
-<span>Horizontal traffic</span>
-<span id="ai-horizontal">0</span>
-</div>
+    <div class="ai-metric">
+        <span>Horizontal traffic</span>
+        <span id="ai-horizontal">6</span>
+    </div>
 
-<div class="ai-metric">
-<span>Vertical traffic</span>
-<span id="ai-vertical">0</span>
-</div>
+    <div class="ai-metric">
+        <span>Vertical traffic</span>
+        <span id="ai-vertical">6</span>
+    </div>
 
-<div class="ai-metric">
-<span>Green time</span>
-<span id="ai-green-time">8s</span>
-</div>
+    <div class="ai-metric">
+        <span>Green time</span>
+        <span id="ai-green-time">8s</span>
+    </div>
 
-<div class="ai-decision" id="ai-decision">
-AI analyzing traffic...
-</div>
+    <div class="ai-decision"
+         id="ai-decision">
+        AI detected balanced traffic
+    </div>
 
 `;
 
@@ -2815,53 +2952,45 @@ document.body.appendChild(
 );
 
 
-// ============================================================
-// AI PANEL UPDATE
-// ============================================================
+/* ============================================================
+   AI UPDATE
+   ============================================================ */
 
 function updateAIPanel() {
 
     calculateTraffic();
 
 
-    document
-        .getElementById(
-            "ai-horizontal"
-        )
-        .textContent =
+    document.getElementById(
+        "ai-horizontal"
+    ).textContent =
         horizontalTraffic;
 
 
-    document
-        .getElementById(
-            "ai-vertical"
-        )
-        .textContent =
+    document.getElementById(
+        "ai-vertical"
+    ).textContent =
         verticalTraffic;
 
 
-    document
-        .getElementById(
-            "ai-green-time"
-        )
-        .textContent =
+    document.getElementById(
+        "ai-green-time"
+    ).textContent =
         currentGreenTime +
         "s";
 
 
-    document
-        .getElementById(
-            "ai-decision"
-        )
-        .textContent =
+    document.getElementById(
+        "ai-decision"
+    ).textContent =
         aiDecision;
 
 }
 
 
-// ============================================================
-// DAY NIGHT
-// ============================================================
+/* ============================================================
+   DAY/NIGHT BUTTON
+   ============================================================ */
 
 const dayNightButton =
     document.getElementById(
@@ -2869,122 +2998,70 @@ const dayNightButton =
     );
 
 
-function updateWindows() {
-
-    scene.traverse(
-        object => {
-
-            if (
-                object.userData &&
-                object.userData.cityWindow
-            ) {
-
-                if (
-                    isNight
-                ) {
-
-                    object.material.color.set(
-                        0xffd966
-                    );
-
-                    object.material.emissive.set(
-                        0xff9900
-                    );
-
-                    object.material.emissiveIntensity =
-                        1.2;
-
-                }
-
-                else {
-
-                    object.material.color.set(
-                        0x9fd8ff
-                    );
-
-                    object.material.emissive.set(
-                        0x000000
-                    );
-
-                    object.material.emissiveIntensity =
-                        0;
-
-                }
-
-            }
-
-        }
-    );
-
-}
-
-
 function setDayMode() {
 
-    isNight =
-        false;
+    isNight = false;
 
 
-    scene.background =
-        new THREE.Color(
-            0x87ceeb
-        );
+    scene.background.set(
+        0x82cbea
+    );
+
+    scene.fog.color.set(
+        0x82cbea
+    );
 
 
-    ambientLight.intensity =
-        0.7;
-
-    sunlight.intensity =
-        1;
+    targetAmbient = 1.25;
+    targetSun = 2.2;
 
 
     ground.material.color.set(
-        0x4f984f
+        0x3d7d40
     );
 
 
     streetLights.forEach(
-        item => {
+        light => {
 
-            item.light.intensity =
-                0;
+            light.light.intensity = 0;
 
         }
     );
 
 
-    if (
-        dayNightButton
-    ) {
+    buildingWindows.forEach(
+        window => {
 
-        dayNightButton.textContent =
-            "🌙 Switch to Night";
+            window.material =
+                dayWindowMaterial;
 
-    }
+        }
+    );
 
 
-    updateWindows();
+    dayNightButton.textContent =
+        "🌙 Switch to Night";
 
 }
 
 
 function setNightMode() {
 
-    isNight =
-        true;
+    isNight = true;
 
 
-    scene.background =
-        new THREE.Color(
-            0x07111f
-        );
+    scene.background.set(
+        0x071323
+    );
+
+    scene.fog.color.set(
+        0x071323
+    );
 
 
-    ambientLight.intensity =
-        0.18;
-
-    sunlight.intensity =
-        0.15;
+    targetAmbient = 0.48;
+    targetSun = 0.32;
 
 
     ground.material.color.set(
@@ -2993,104 +3070,100 @@ function setNightMode() {
 
 
     streetLights.forEach(
-        item => {
+        light => {
 
-            item.light.intensity =
-                3;
+            light.light.intensity = 2.2;
+
+        }
+    );
+
+
+    buildingWindows.forEach(
+        window => {
+
+            window.material =
+                nightWindowMaterial;
 
         }
     );
 
 
-    if (
-        dayNightButton
-    ) {
-
-        dayNightButton.textContent =
-            "☀️ Switch to Day";
-
-    }
-
-
-    updateWindows();
+    dayNightButton.textContent =
+        "☀️ Switch to Day";
 
 }
 
 
-if (
-    dayNightButton
-) {
+dayNightButton.addEventListener(
+    "click",
+    () => {
 
-    dayNightButton.addEventListener(
-        "click",
-        () => {
+        if (
+            isNight
+        )
+            setDayMode();
 
-            if (
-                isNight
-            ) {
-
-                setDayMode();
-
-            }
-
-            else {
-
-                setNightMode();
-
-            }
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// DASHBOARD
-// ============================================================
-
-function updateDashboard() {
-
-    const vehicleCount =
-        document.getElementById(
-            "vehicle-count"
-        );
-
-
-    if (
-        vehicleCount
-    ) {
-
-        vehicleCount.textContent =
-            cars.length;
+        else
+            setNightMode();
 
     }
+);
 
 
-    let nearby =
-        0;
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+
+let dashboardClock = 0;
+
+
+/* Actual traffic density */
+
+function calculateDensity() {
+
+    let roadOccupancy = 0;
 
 
     cars.forEach(
         car => {
 
-            const distance =
-                Math.sqrt(
+            const x =
+                Math.abs(
+                    car.position.x
+                );
 
-                    car.position.x *
-                    car.position.x +
-
-                    car.position.z *
+            const z =
+                Math.abs(
                     car.position.z
-
                 );
 
 
+            /* intersection */
+
             if (
-                distance < 12
+                x < 12 &&
+                z < 12
             ) {
 
-                nearby++;
+                roadOccupancy++;
+
+            }
+
+
+            /* queue area */
+
+            if (
+                (
+                    x < 16 &&
+                    z < 4
+                ) ||
+                (
+                    z < 16 &&
+                    x < 4
+                )
+            ) {
+
+                roadOccupancy++;
 
             }
 
@@ -3098,13 +3171,71 @@ function updateDashboard() {
     );
 
 
-    const density =
+    const maxOccupancy =
+        cars.length * 2;
+
+
+    return Math.min(
+        100,
         Math.round(
+            (
+                roadOccupancy /
+                Math.max(
+                    maxOccupancy,
+                    1
+                )
+            ) * 100
+        )
+    );
 
-            nearby /
-            cars.length *
-            100
+}
 
+
+/* actual average speed */
+
+function calculateAverageSpeed() {
+
+    let total = 0;
+
+
+    cars.forEach(
+        car => {
+
+            total +=
+                car.userData.currentSpeed;
+
+        }
+    );
+
+
+    const average =
+        total /
+        Math.max(
+            cars.length,
+            1
+        );
+
+
+    return Math.round(
+        average * 14
+    );
+
+}
+
+
+function updateDashboard() {
+
+    const density =
+        calculateDensity();
+
+
+    const averageSpeed =
+        calculateAverageSpeed();
+
+
+    const vehicles =
+        document.getElementById(
+            "vehicle-count"
         );
 
 
@@ -3114,108 +3245,15 @@ function updateDashboard() {
         );
 
 
-    if (
-        densityElement
-    ) {
-
-        densityElement.textContent =
-            density +
-            "%";
-
-    }
-
-
     const speedElement =
         document.getElementById(
             "average-speed"
         );
 
 
-    if (
-        speedElement
-    ) {
-
-        speedElement.textContent =
-            "50 km/h";
-
-    }
-
-
     const signalElement =
         document.getElementById(
             "signal-status"
-        );
-
-
-    if (
-        signalElement
-    ) {
-
-        const isYellow =
-            trafficState.includes(
-                "YELLOW"
-            );
-
-
-        signalElement.textContent =
-            isYellow
-                ? "YELLOW"
-                : "GREEN";
-
-        signalElement.classList.toggle(
-            "is-caution",
-            isYellow
-        );
-
-        signalElement.classList.toggle(
-            "is-go",
-            !isYellow
-        );
-
-
-        const dashboardPanel =
-            document.getElementById(
-                "dashboard"
-            );
-
-
-        if (
-            dashboardPanel
-        ) {
-
-            dashboardPanel.classList.toggle(
-                "is-caution",
-                isYellow
-            );
-
-            dashboardPanel.classList.toggle(
-                "is-go",
-                !isYellow
-            );
-
-        }
-
-    }
-
-
-    const totalTime =
-        trafficState.includes(
-            "YELLOW"
-        )
-            ? YELLOW_TIME
-            : currentGreenTime;
-
-
-    const remaining =
-        Math.max(
-
-            0,
-
-            Math.ceil(
-                totalTime -
-                trafficTimer
-            )
-
         );
 
 
@@ -3225,39 +3263,141 @@ function updateDashboard() {
         );
 
 
-    if (
-        timerElement
-    ) {
+    const dashboard =
+        document.getElementById(
+            "dashboard"
+        );
 
-        timerElement.textContent =
-            remaining +
-            "s";
 
-    }
+    vehicles.textContent =
+        cars.length;
+
+
+    densityElement.textContent =
+        density + "%";
+
+
+    speedElement.textContent =
+        Math.max(
+            0,
+            Math.min(
+                averageSpeed,
+                60
+            )
+        ) +
+        " km/h";
+
+
+    const yellow =
+        trafficState.includes(
+            "YELLOW"
+        );
+
+
+    signalElement.textContent =
+        yellow
+            ? "YELLOW"
+            : "GREEN";
+
+
+    signalElement.classList.toggle(
+        "is-caution",
+        yellow
+    );
+
+
+    signalElement.classList.toggle(
+        "is-go",
+        !yellow
+    );
+
+
+    dashboard.classList.toggle(
+        "is-caution",
+        yellow
+    );
+
+
+    dashboard.classList.toggle(
+        "is-go",
+        !yellow
+    );
+
+
+    const duration =
+        yellow
+            ? YELLOW_TIME
+            : currentGreenTime;
+
+
+    const remaining =
+        Math.max(
+            0,
+            Math.ceil(
+                duration -
+                trafficTimer
+            )
+        );
+
+
+    timerElement.textContent =
+        remaining + "s";
 
 }
 
 
-// ============================================================
-// INITIAL STATE
-// ============================================================
+/* ============================================================
+   LIGHTING TRANSITION
+   ============================================================ */
+
+function updateLighting(
+    delta
+) {
+
+    ambientLight.intensity =
+        THREE.MathUtils.lerp(
+            ambientLight.intensity,
+            targetAmbient,
+            Math.min(
+                delta * 2,
+                1
+            )
+        );
+
+
+    sun.intensity =
+        THREE.MathUtils.lerp(
+            sun.intensity,
+            targetSun,
+            Math.min(
+                delta * 2,
+                1
+            )
+        );
+
+}
+
+
+/* ============================================================
+   INITIAL STATE
+   ============================================================ */
+
+selectNextGreen();
 
 updateTrafficLights();
 
-calculateTraffic();
-
-updateAIPanel();
+setDayMode();
 
 updateDashboard();
 
-setDayMode();
+updateAIPanel();
 
 
-// ============================================================
-// ANIMATION
-// ============================================================
+/* ============================================================
+   ANIMATION LOOP
+   ============================================================ */
 
-let lastTime =
+let previousTime =
     performance.now();
 
 
@@ -3272,38 +3412,65 @@ function animate() {
         performance.now();
 
 
-    const deltaTime =
+    let delta =
         (
             now -
-            lastTime
+            previousTime
         ) / 1000;
 
 
-    lastTime =
+    previousTime =
         now;
+
+
+    /* safety against tab lag */
+
+    delta =
+        Math.min(
+            delta,
+            0.05
+        );
 
 
     controls.update();
 
 
     updateTrafficSystem(
-        deltaTime
+        delta
     );
 
 
-    movePedestrians();
+    moveCars(
+        delta
+    );
 
 
-    moveCars();
+    moveAmbulance(
+        delta
+    );
 
 
-    moveAmbulance();
+    updateLighting(
+        delta
+    );
 
 
-    updateDashboard();
+    dashboardClock +=
+        delta;
 
 
-    updateAIPanel();
+    if (
+        dashboardClock >
+        0.15
+    ) {
+
+        updateDashboard();
+
+        updateAIPanel();
+
+        dashboardClock = 0;
+
+    }
 
 
     renderer.render(
@@ -3311,16 +3478,15 @@ function animate() {
         camera
     );
 
-    
 }
 
 
 animate();
 
 
-// ============================================================
-// RESIZE
-// ============================================================
+/* ============================================================
+   RESIZE
+   ============================================================ */
 
 window.addEventListener(
     "resize",
@@ -3330,7 +3496,6 @@ window.addEventListener(
             window.innerWidth /
             window.innerHeight;
 
-
         camera.updateProjectionMatrix();
 
 
@@ -3338,6 +3503,28 @@ window.addEventListener(
             window.innerWidth,
             window.innerHeight
         );
+
+
+        renderer.setPixelRatio
+            Math.min(
+                window.devicePixelRatio,
+                1.6
+            );
+
+    }
+);
+
+
+/* ============================================================
+   VISIBILITY SAFETY
+   ============================================================ */
+
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        previousTime =
+            performance.now();
 
     }
 );
