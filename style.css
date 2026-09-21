@@ -1,0 +1,394 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+:root {
+    --bg-void: #05070b;
+    --panel: rgba(12, 17, 26, 0.86);
+    --border: #223044;
+    --border-soft: rgba(255, 255, 255, 0.07);
+    --ink-100: #eef1f6;
+    --ink-400: #8998ac;
+    --amber: #e8a23d;
+    --amber-soft: rgba(232, 162, 61, 0.14);
+    --go: #3ed598;
+    --caution: #f0c443;
+    --stop: #ea5a5f;
+    --font-display: "Space Grotesk", "Segoe UI", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", "Courier New", monospace;
+}
+
+
+html,
+body {
+    height: 100%;
+}
+
+
+body {
+    overflow: hidden;
+    background: var(--bg-void);
+    color: var(--ink-100);
+    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+}
+
+
+/* ============================= */
+/* CITY */
+/* ============================= */
+
+#city-container {
+    width: 100vw;
+    height: 100vh;
+}
+
+
+/* ============================= */
+/* SHARED HUD PANEL CHROME */
+/* ============================= */
+
+.hud-panel {
+    position: fixed;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    background-image:
+        linear-gradient(var(--border-soft) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+    background-size: 18px 18px;
+    box-shadow: 0 20px 46px rgba(0, 0, 0, 0.45);
+    z-index: 100;
+}
+
+.hud-panel::before,
+.hud-panel::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+}
+
+.hud-panel::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid var(--amber);
+    border-left: 2px solid var(--amber);
+}
+
+.hud-panel::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid var(--amber);
+    border-right: 2px solid var(--amber);
+}
+
+
+/* ============================= */
+/* DASHBOARD */
+/* ============================= */
+
+#dashboard {
+    top: 20px;
+    right: 20px;
+    width: 288px;
+    padding: 22px 22px 18px;
+    border-left: 3px solid var(--go);
+    transition: border-color 0.3s ease;
+}
+
+#dashboard.is-caution {
+    border-left-color: var(--caution);
+}
+
+.dashboard-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.dashboard-subtitle {
+    margin-top: 3px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--ink-400);
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border-soft);
+}
+
+.stat-row:first-of-type {
+    border-top: none;
+}
+
+.icon {
+    width: 18px;
+    height: 18px;
+    color: var(--amber);
+    flex-shrink: 0;
+}
+
+.stat-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--ink-400);
+}
+
+.stat-value {
+    margin-top: 2px;
+    font-family: var(--font-mono);
+    font-size: 17px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-100);
+}
+
+.stat-value.is-go {
+    color: var(--go);
+}
+
+.stat-value.is-caution {
+    color: var(--caution);
+}
+
+.day-night-btn {
+    width: 100%;
+    margin-top: 6px;
+    padding: 11px;
+    background: transparent;
+    border: 1px solid var(--amber);
+    border-radius: 3px;
+    color: var(--amber);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.day-night-btn:hover {
+    background: var(--amber-soft);
+}
+
+.day-night-btn:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+}
+
+.system-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 11px;
+    color: var(--ink-400);
+    letter-spacing: 0.3px;
+}
+
+.pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--go);
+    box-shadow: 0 0 0 0 rgba(62, 213, 152, 0.55);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(62, 213, 152, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(62, 213, 152, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(62, 213, 152, 0);
+    }
+}
+
+
+/* ============================= */
+/* AI PANEL */
+/* ============================= */
+
+.ai-panel {
+    left: 20px;
+    bottom: 20px;
+    width: 270px;
+    padding: 18px 20px;
+}
+
+.ai-panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.ai-panel-mode {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: var(--go);
+    margin-bottom: 12px;
+}
+
+.ai-metric {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: var(--ink-400);
+    padding: 5px 0;
+}
+
+.ai-metric span:last-child {
+    font-family: var(--font-mono);
+    color: var(--ink-100);
+}
+
+.ai-decision {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 12px;
+    color: var(--ink-400);
+    font-style: italic;
+}
+
+
+/* ============================= */
+/* EMERGENCY CONTROLS */
+/* ============================= */
+
+.emergency-btn {
+    position: fixed;
+    left: 20px;
+    top: 20px;
+    padding: 12px 20px;
+    border: 1px solid var(--stop);
+    border-radius: 3px;
+    background: rgba(234, 90, 95, 0.1);
+    color: var(--stop);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    z-index: 300;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.emergency-btn:hover {
+    background: var(--stop);
+    color: #0c111a;
+}
+
+.emergency-btn:focus-visible {
+    outline: 2px solid var(--stop);
+    outline-offset: 2px;
+}
+
+.emergency-btn.is-active {
+    background: var(--stop);
+    color: #0c111a;
+    animation: emergency-flash 1s infinite;
+}
+
+@keyframes emergency-flash {
+    50% {
+        box-shadow: 0 0 0 6px rgba(234, 90, 95, 0.25);
+    }
+}
+
+.emergency-banner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    background: rgba(234, 90, 95, 0.15);
+    border: 1px solid var(--stop);
+    border-radius: 3px;
+    color: var(--stop);
+    font-weight: 600;
+    font-size: 13px;
+    z-index: 250;
+    display: none;
+}
+
+.emergency-banner.is-visible {
+    display: block;
+}
+
+
+/* ============================= */
+/* ACCESSIBILITY */
+/* ============================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .pulse-dot,
+    .emergency-btn.is-active {
+        animation: none;
+    }
+}
+
+
+/* ============================= */
+/* RESPONSIVE */
+/* ============================= */
+
+@media (max-width: 640px) {
+
+    #dashboard {
+        width: 240px;
+        padding: 16px 16px 14px;
+        top: 12px;
+        right: 12px;
+    }
+
+    .dashboard-title {
+        font-size: 17px;
+    }
+
+    .stat-value {
+        font-size: 15px;
+    }
+
+    .ai-panel {
+        width: 210px;
+        left: 12px;
+        bottom: 12px;
+        padding: 14px 16px;
+    }
+
+    .emergency-btn {
+        left: 12px;
+        top: 12px;
+        padding: 9px 14px;
+        font-size: 11px;
+    }
+
+    .emergency-banner {
+        top: 12px;
+        font-size: 11px;
+        padding: 7px 12px;
+        max-width: calc(100vw - 24px);
+    }
+}
